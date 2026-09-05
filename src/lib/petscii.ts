@@ -147,9 +147,11 @@ function downsample(
 }
 
 async function getPalette(
+	paletteFile: File | undefined
 ) {
-	const hexFile = await fetch("/japanese-woodblock.hex")
-	const hexString = await hexFile.text()
+	const hexString = paletteFile
+		? await paletteFile.text()
+		: await (await fetch("./commodore64.hex")).text()
 	const palette = hexString.trim().split(/\s+/).map(hex => [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)])
 	return palette
 }
@@ -259,7 +261,8 @@ function render(
 }
 
 export async function petsciify(
-	input: File
+	input: File,
+	paletteFile: File | undefined
 ): Promise<Blob> {
 	const srcimg = await createImageBitmap(input);
 	const sw = srcimg.width
@@ -282,7 +285,7 @@ export async function petsciify(
 
 	linearToSrgb(resizedDataArray)
 
-	const palette = await getPalette()
+	const palette = await getPalette(paletteFile)
 	let prerender = []
 	for (let y = 0; y < rows; y++) {
 		for (let x = 0; x < cols; x++) {

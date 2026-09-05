@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { petsciify } from "$lib/petscii";
-	let files = $state<FileList | undefined>();
+	let paletteFiles = $state<FileList | undefined>();
+	let imgFiles = $state<FileList | undefined>();
 	let outputurl = $state<string | undefined>();
 	let inputurl = $state<string | undefined>();
 	$effect(() => {
-		const file = files?.[0];
-		if (!file) return;
+		const imgFile = imgFiles?.[0];
+		const paletteFile = paletteFiles?.[0];
+		if (!imgFile) return;
 		let cancelled = false;
-		petsciify(file).then((blob) => {
+		petsciify(imgFile, paletteFile).then((blob) => {
 			if (!cancelled) outputurl = URL.createObjectURL(blob);
 		});
-		inputurl = URL.createObjectURL(file);
+		inputurl = URL.createObjectURL(imgFile);
 		return () => {
 			cancelled = true;
 		};
@@ -18,8 +20,15 @@
 </script>
 
 <h1>PETSCII Park</h1>
-<p>Input an Image</p>
-<input type="file" accept="image/*" alt="image input" bind:files />
+<p>Input Image</p>
+<input
+	type="file"
+	accept="image/*"
+	aria-label="image input"
+	bind:files={imgFiles}
+/>
+<p>Input Palette</p>
+<input type="file" aria-label="palette input" bind:files={paletteFiles} />
 {#if inputurl}
 	<img src={inputurl} alt="input" />
 {/if}
