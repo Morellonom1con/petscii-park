@@ -3,14 +3,17 @@ import ndarray from "ndarray"
 async function getGlyphs() {
 	const glyphFile = await fetch("/glyphbitstring.txt")
 	const glyphText = await glyphFile.text()
-	const arr = []
-	for (let i = 0; i < glyphText.length; i++) {
-		if (glyphText[i] == '1')
-			arr[i] = 1
-		else
-			arr[i] = 0
+	const glyphs = []
+	for (let i = 0; i < glyphText.length / 64; i++) {
+		let arr = []
+		for (let j = 0; j < 64; j++) {
+			if (glyphText[i * 64 + j] == '1')
+				arr[j] = 1
+			else
+				arr[j] = 0
+		}
+		glyphs.push(arr)
 	}
-	const glyphs = ndarray(arr, [153, 8, 8])
 	return glyphs
 }
 
@@ -199,7 +202,7 @@ function glyphify(
 	palette: number[][]
 ) {
 	let glyphStore = []
-	for (let g = 0; g < 153; g++) {
+	for (let g = 0; g < glyphs.shape[0]; g++) {
 		let fgMean = [0, 0, 0]
 		let bgMean = [0, 0, 0]
 		let fgVar = [0, 0, 0]
@@ -209,14 +212,16 @@ function glyphify(
 		for (let k = 0; k < 3; k++) {
 			for (let i = 0; i < 8; i++) {
 				for (let j = 0; j < 8; j++) {
+					const tMean = image.get(dy + i, dx + j, k)
+					const tVar = tMean * tMean
 					if (glyphs.get(g, i, j) == 1) {
-						fgMean[k] += image.get(dy + i, dx + j, k)
-						fgVar[k] += Math.pow(image.get(dy + i, dx + j, k), 2)
+						fgMean[k] += tMean
+						fgVar[k] += tVar
 						nfg += 1
 					}
 					else {
-						bgMean[k] += image.get(dy + i, dx + j, k)
-						bgVar[k] += Math.pow(image.get(dy + i, dx + j, k), 2)
+						bgMean[k] += tMean
+						bgVar[k] += tVar
 						nbg += 1
 					}
 				}
@@ -274,25 +279,39 @@ export async function petsciify(
 	let srcDataArray = ndarray(srcData.data, [sh, sw, 4]);
 
 
-	const glyphs = await getGlyphs()
+	let glyphs = await getGlyphs()
 
+	console.time("srgbtoLinear")
 	srgbToLinear(srcDataArray)
+	console.timeEnd("srgbtoLinear")
 
 	const cols = 40
 	const rows = Math.round(cols * sh / sw)
 	const gh = 8, gw = 8
+	console.time("downsample")
 	let resizedDataArray = downsample(srcDataArray, rows * gh, cols * gw)
+	console.timeEnd("downsample")
 
+	console.time("linearToSrgb")
 	linearToSrgb(resizedDataArray)
+	console.timeEnd("linearToSrgb")
 
 	const palette = await getPalette(paletteFile)
 	let prerender = []
+	const glyphtemp = glyphs.flat()
+	let glyphArray = ndarray(glyphtemp, [glyphtemp.length / 64, 8, 8])
+
+	console.time("match")
 	for (let y = 0; y < rows; y++) {
 		for (let x = 0; x < cols; x++) {
-			prerender.push(glyphify(resizedDataArray, x * gw, y * gh, glyphs, palette))
+			prerender.push(glyphify(resizedDataArray, x * gw, y * gh, glyphArray, palette))
 		}
 	}
-	render(prerender, rows, cols, resizedDataArray, glyphs)
+	console.timeEnd("match")
+
+	console.time("render")
+	render(prerender, rows, cols, resizedDataArray, glyphArray)
+	console.timeEnd("render")
 
 	let outputCanvas = new OffscreenCanvas(cols * gw, rows * gh)
 	let outputCtx = outputCanvas.getContext("2d")!
