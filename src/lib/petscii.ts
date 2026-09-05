@@ -1,21 +1,5 @@
 import ndarray from "ndarray"
-
-async function getGlyphs() {
-	const glyphFile = await fetch("/glyphbitstring.txt")
-	const glyphText = await glyphFile.text()
-	const glyphs = []
-	for (let i = 0; i < glyphText.length / 64; i++) {
-		let arr = []
-		for (let j = 0; j < 64; j++) {
-			if (glyphText[i * 64 + j] == '1')
-				arr[j] = 1
-			else
-				arr[j] = 0
-		}
-		glyphs.push(arr)
-	}
-	return glyphs
-}
+import { getGlyphs } from "./glyphs"
 
 function srgbToLinear(
 	image: ndarray
@@ -147,6 +131,24 @@ function downsample(
 	}
 	return outDataArray
 
+}
+
+function upscale(image: ndarray,
+	scale: number
+) {
+	let tempData = new Uint8ClampedArray(image.shape[0] * image.shape[1] * 4 * scale * scale)
+	let tempDataArray = ndarray(tempData, [image.shape[0] * scale, image.shape[1] * scale, 4])
+	for (let k = 0; k < 4; k++)
+		for (let i = 0; i < image.shape[0]; i++) {
+			for (let j = 0; j < image.shape[1]; j++) {
+				for (let x = 0; x < scale; x++) {
+					for (let y = 0; y < scale; y++) {
+						tempDataArray.set(i * scale + x, j * scale + y, k, image.get(i, j, k))
+					}
+				}
+			}
+		}
+	return tempDataArray
 }
 
 async function getPalette(
@@ -313,9 +315,10 @@ export async function petsciify(
 	render(prerender, rows, cols, resizedDataArray, glyphArray)
 	console.timeEnd("render")
 
-	let outputCanvas = new OffscreenCanvas(cols * gw, rows * gh)
+	const upscaledArray = upscale(resizedDataArray, 2)
+	let outputCanvas = new OffscreenCanvas(cols * gw * 2, rows * gh * 2)
 	let outputCtx = outputCanvas.getContext("2d")!
-	const outputData = new ImageData(resizedDataArray.data, cols * gw, rows * gh)
+	const outputData = new ImageData(upscaledArray.data, cols * gw * 2, rows * gh * 2)
 	outputCtx.putImageData(outputData, 0, 0)
 
 	return outputCanvas.convertToBlob({ type: "image/png" });
