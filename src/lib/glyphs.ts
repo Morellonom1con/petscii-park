@@ -14,3 +14,18 @@ export async function getGlyphs() {
 	}
 	return glyphs
 }
+
+export function deleteGlyph(
+	glyphs: number[][],
+	index: number
+) {
+	if (glyphs.length == 1) return
+	glyphs.splice(index, 1)
+}
+
+export function addGlyph(
+	glyphs: number[][],
+	index: number
+) {
+	glyphs.splice(index + 1, 0, Array(64).fill(0))
+}

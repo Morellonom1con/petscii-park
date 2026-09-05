@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { petsciify } from "$lib/petscii";
+	import { getGlyphs } from "$lib/glyphs";
+	import GlyphGallery from "$lib/GlyphGallery.svelte";
+	import { onMount } from "svelte";
+	import GlyphEditor from "$lib/GlyphEditor.svelte";
 	let paletteFiles = $state<FileList | undefined>();
 	let imgFiles = $state<FileList | undefined>();
 	let outputurl = $state<string | undefined>();
 	let inputurl = $state<string | undefined>();
+	let glyphs = $state<number[][]>([]);
+	let selected = $state(0);
+	onMount(async () => (glyphs = await getGlyphs()));
 	$effect(() => {
 		const imgFile = imgFiles?.[0];
 		const paletteFile = paletteFiles?.[0];
@@ -35,6 +42,8 @@
 {#if outputurl}
 	<img src={outputurl} alt="output" />
 {/if}
+<GlyphGallery {glyphs} bind:selected />
+<GlyphEditor glyph={glyphs[selected]} />
 
 <style>
 	:global(body) {
