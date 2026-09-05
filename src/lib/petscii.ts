@@ -148,7 +148,7 @@ function downsample(
 
 async function getPalette(
 ) {
-	const hexFile = await fetch("/commodore64.hex")
+	const hexFile = await fetch("/japanese-woodblock.hex")
 	const hexString = await hexFile.text()
 	const palette = hexString.trim().split(/\s+/).map(hex => [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)])
 	return palette
@@ -270,17 +270,15 @@ export async function petsciify(
 	let srcData = srcctx.getImageData(0, 0, sw, sh)
 	let srcDataArray = ndarray(srcData.data, [sh, sw, 4]);
 
+
+	const glyphs = await getGlyphs()
+
+	srgbToLinear(srcDataArray)
+
 	const cols = 40
 	const rows = Math.round(cols * sh / sw)
 	const gh = 8, gw = 8
 	let resizedDataArray = downsample(srcDataArray, rows * gh, cols * gw)
-
-	const glyphs = await getGlyphs()
-
-	srgbToLinear(resizedDataArray)
-
-	vbox(resizedDataArray)
-	hbox(resizedDataArray)
 
 	linearToSrgb(resizedDataArray)
 
