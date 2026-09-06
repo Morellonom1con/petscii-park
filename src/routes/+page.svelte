@@ -9,6 +9,8 @@
 	let outputurl = $state<string | undefined>();
 	let inputurl = $state<string | undefined>();
 	let glyphs = $state<number[][]>([]);
+	let saturation = $state(1);
+	let contrast = $state(1);
 	let selected = $state(0);
 	onMount(async () => (glyphs = await getGlyphs()));
 	$effect(() => {
@@ -22,6 +24,8 @@
 			imgFile,
 			paletteFile,
 			currentGlyphs,
+			saturation,
+			contrast,
 			controller.signal,
 		)
 			.then((blob) => {
@@ -52,6 +56,26 @@
 {#if outputurl}
 	<img src={outputurl} alt="output" />
 {/if}
+<div>
+	<label>Saturation</label>
+	<input
+		type="range"
+		min="0"
+		max="2"
+		step="0.01"
+		bind:value={saturation}
+	/>
+</div>
+<div>
+	<label>Contrast</label>
+	<input
+		type="range"
+		min="0.5"
+		max="2"
+		step="0.01"
+		bind:value={contrast}
+	/>
+</div>
 <GlyphGallery {glyphs} bind:selected />
 <button onclick={() => addGlyph(glyphs, selected)}>Add</button>
 <button onclick={() => deleteGlyph(glyphs, selected)}>Delete</button>

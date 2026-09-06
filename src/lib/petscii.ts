@@ -176,6 +176,48 @@ function closestPaletteColor(
 	return palette[best]
 }
 
+function saturate(
+	image: ndarray,
+	scale: number = 1
+) {
+
+	const shape = image.shape
+	const height = shape[0]
+	const width = shape[1]
+	let lum = 0
+	let R = 0, G = 0, B = 0
+	for (let i = 0; i < height; i++) {
+		for (let j = 0; j < width; j++) {
+			R = image.get(i, j, 0)
+			G = image.get(i, j, 1)
+			B = image.get(i, j, 2)
+			lum = 0.2126 * R + 0.7152 * G + 0.0722 * B
+			image.set(i, j, 0, lum + scale * (R - lum));
+			image.set(i, j, 1, lum + scale * (G - lum));
+			image.set(i, j, 2, lum + scale * (B - lum));
+		}
+	}
+}
+
+function changeContrast(
+	image: ndarray,
+	scale: number = 1
+) {
+
+	const shape = image.shape
+	const height = shape[0]
+	const width = shape[1]
+	let V = 0
+	for (let i = 0; i < height; i++) {
+		for (let j = 0; j < width; j++) {
+			for (let k = 0; k < 3; k++) {
+				V = image.get(i, j, k)
+				image.set(i, j, k, (V - 128) * scale + 128);
+			}
+		}
+	}
+}
+
 function glyphCost(
 	nfg: number,
 	nbg: number,
@@ -271,6 +313,8 @@ export async function petsciify(
 	input: File,
 	paletteFile: File | undefined,
 	glyphs: number[][],
+	saturation: number,
+	contrast: number,
 	signal: AbortSignal
 ): Promise<Blob> {
 	const yieldToEventLoop = () => new Promise(r => setTimeout(r, 0))
@@ -284,10 +328,7 @@ export async function petsciify(
 	let srcDataArray = ndarray(srcData.data, [sh, sw, 4]);
 	await yieldToEventLoop()
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-
-	console.time("srgbtoLinear")
 	srgbToLinear(srcDataArray)
-	console.timeEnd("srgbtoLinear")
 	await yieldToEventLoop()
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
@@ -298,10 +339,12 @@ export async function petsciify(
 	await yieldToEventLoop()
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
+	saturate(resizedDataArray, saturation)
 	linearToSrgb(resizedDataArray)
 	await yieldToEventLoop()
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
+	changeContrast(resizedDataArray, contrast)
 	const palette = await getPalette(paletteFile)
 	let prerender = []
 	const glyphtemp = glyphs.flat()
