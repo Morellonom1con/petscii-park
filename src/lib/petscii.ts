@@ -1,5 +1,4 @@
 import ndarray from "ndarray"
-import { getGlyphs } from "./glyphs"
 
 function srgbToLinear(
 	image: ndarray
@@ -231,8 +230,9 @@ function glyphify(
 		}
 		nfg = nfg / 3
 		nbg = nbg / 3
-		fgMean = fgMean.map(num => num / nfg)
-		bgMean = bgMean.map(num => num / nbg)
+
+		fgMean = nfg === 0 ? [0, 0, 0] : fgMean.map(num => num / nfg)
+		bgMean = nbg === 0 ? [0, 0, 0] : bgMean.map(num => num / nbg)
 		fgVar = fgVar.map((num, k) => num - (nfg * Math.pow(fgMean[k], 2)))
 		bgVar = bgVar.map((num, k) => num - (nbg * Math.pow(bgMean[k], 2)))
 		let fg = closestPaletteColor(fgMean, palette)
@@ -269,8 +269,11 @@ function render(
 
 export async function petsciify(
 	input: File,
-	paletteFile: File | undefined
+	paletteFile: File | undefined,
+	glyphs: number[][],
+	signal: AbortSignal
 ): Promise<Blob> {
+	const yieldToEventLoop = () => new Promise(r => setTimeout(r, 0))
 	const srcimg = await createImageBitmap(input);
 	const sw = srcimg.width
 	const sh = srcimg.height
@@ -279,41 +282,40 @@ export async function petsciify(
 	srcctx.drawImage(srcimg, 0, 0, sw, sh);
 	let srcData = srcctx.getImageData(0, 0, sw, sh)
 	let srcDataArray = ndarray(srcData.data, [sh, sw, 4]);
-
-
-	let glyphs = await getGlyphs()
+	await yieldToEventLoop()
+	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
 	console.time("srgbtoLinear")
 	srgbToLinear(srcDataArray)
 	console.timeEnd("srgbtoLinear")
+	await yieldToEventLoop()
+	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
 	const cols = 40
 	const rows = Math.round(cols * sh / sw)
 	const gh = 8, gw = 8
-	console.time("downsample")
 	let resizedDataArray = downsample(srcDataArray, rows * gh, cols * gw)
-	console.timeEnd("downsample")
+	await yieldToEventLoop()
+	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
-	console.time("linearToSrgb")
 	linearToSrgb(resizedDataArray)
-	console.timeEnd("linearToSrgb")
+	await yieldToEventLoop()
+	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
 	const palette = await getPalette(paletteFile)
 	let prerender = []
 	const glyphtemp = glyphs.flat()
 	let glyphArray = ndarray(glyphtemp, [glyphtemp.length / 64, 8, 8])
 
-	console.time("match")
 	for (let y = 0; y < rows; y++) {
+		await yieldToEventLoop()
+		if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 		for (let x = 0; x < cols; x++) {
 			prerender.push(glyphify(resizedDataArray, x * gw, y * gh, glyphArray, palette))
 		}
 	}
-	console.timeEnd("match")
 
-	console.time("render")
 	render(prerender, rows, cols, resizedDataArray, glyphArray)
-	console.timeEnd("render")
 
 	const upscaledArray = upscale(resizedDataArray, 2)
 	let outputCanvas = new OffscreenCanvas(cols * gw * 2, rows * gh * 2)

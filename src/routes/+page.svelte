@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { petsciify } from "$lib/petscii";
-	import { getGlyphs } from "$lib/glyphs";
+	import { getGlyphs, addGlyph, deleteGlyph } from "$lib/glyphs";
 	import GlyphGallery from "$lib/GlyphGallery.svelte";
 	import { onMount } from "svelte";
 	import GlyphEditor from "$lib/GlyphEditor.svelte";
@@ -12,16 +12,26 @@
 	let selected = $state(0);
 	onMount(async () => (glyphs = await getGlyphs()));
 	$effect(() => {
+		const currentGlyphs = $state.snapshot(glyphs);
 		const imgFile = imgFiles?.[0];
 		const paletteFile = paletteFiles?.[0];
 		if (!imgFile) return;
+		const controller = new AbortController();
 		let cancelled = false;
-		petsciify(imgFile, paletteFile).then((blob) => {
-			if (!cancelled) outputurl = URL.createObjectURL(blob);
-		});
+		petsciify(
+			imgFile,
+			paletteFile,
+			currentGlyphs,
+			controller.signal,
+		)
+			.then((blob) => {
+				if (!cancelled)
+					outputurl = URL.createObjectURL(blob);
+			})
+			.catch(() => {});
 		inputurl = URL.createObjectURL(imgFile);
 		return () => {
-			cancelled = true;
+			controller.abort();
 		};
 	});
 </script>
@@ -43,6 +53,8 @@
 	<img src={outputurl} alt="output" />
 {/if}
 <GlyphGallery {glyphs} bind:selected />
+<button onclick={() => addGlyph(glyphs, selected)}>Add</button>
+<button onclick={() => deleteGlyph(glyphs, selected)}>Delete</button>
 <GlyphEditor glyph={glyphs[selected]} />
 
 <style>
