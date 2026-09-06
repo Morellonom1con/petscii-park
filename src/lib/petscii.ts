@@ -150,12 +150,18 @@ function upscale(image: ndarray,
 	return tempDataArray
 }
 
-async function getPalette(
-	paletteFile: File | undefined
+export async function paletteFetch(
+	slug: string
 ) {
-	const hexString = paletteFile
-		? await paletteFile.text()
-		: await (await fetch("./commodore64.hex")).text()
+	const response = await fetch(`/api/palette/${encodeURIComponent(slug)}`);
+	if (!response.ok) throw new Error(`Palette fetch failed: ${response.status}`);
+	return await response.text();
+}
+
+function getPalette(
+	paletteString: string
+) {
+	const hexString = paletteString
 	const palette = hexString.trim().split(/\s+/).map(hex => [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)])
 	return palette
 }
@@ -311,7 +317,7 @@ function render(
 
 export async function petsciify(
 	input: File,
-	paletteFile: File | undefined,
+	paletteString: string,
 	glyphs: number[][],
 	saturation: number,
 	contrast: number,
@@ -345,7 +351,7 @@ export async function petsciify(
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
 	changeContrast(resizedDataArray, contrast)
-	const palette = await getPalette(paletteFile)
+	const palette = await getPalette(paletteString)
 	let prerender = []
 	const glyphtemp = glyphs.flat()
 	let glyphArray = ndarray(glyphtemp, [glyphtemp.length / 64, 8, 8])
