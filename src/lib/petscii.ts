@@ -351,7 +351,7 @@ export async function petsciify(
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
 	changeContrast(resizedDataArray, contrast)
-	const palette = await getPalette(paletteString)
+	const palette = getPalette(paletteString)
 	let prerender = []
 	const glyphtemp = glyphs.flat()
 	let glyphArray = ndarray(glyphtemp, [glyphtemp.length / 64, 8, 8])

@@ -1,6 +1,9 @@
-export async function getGlyphs() {
-	const glyphFile = await fetch("/glyphbitstring.txt")
-	const glyphText = await glyphFile.text()
+export async function getGlyphs(
+	glyphStringFile?: File
+) {
+	const glyphText = glyphStringFile
+		? await glyphStringFile.text()
+		: await (await fetch("/glyphbitstring.txt")).text();
 	const glyphs = []
 	for (let i = 0; i < glyphText.length / 64; i++) {
 		let arr = []

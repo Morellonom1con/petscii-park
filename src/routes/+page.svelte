@@ -6,6 +6,7 @@
 	import { onMount } from "svelte";
 
 	let paletteFiles = $state<FileList | undefined>();
+	let glyphFiles = $state<FileList | undefined>();
 	let paletteString = $state<string | undefined>();
 	let paletteSource = $state<"lospec" | "file">("lospec");
 	let slug = $state("commodore64");
@@ -41,6 +42,22 @@
 				if (!cancelled) paletteString = text;
 			});
 		}
+
+		return () => {
+			cancelled = true;
+		};
+	});
+	$effect(() => {
+		const file = glyphFiles?.[0];
+		if (!file) return;
+
+		let cancelled = false;
+		getGlyphs(file).then((loaded) => {
+			if (cancelled) return;
+			glyphs = loaded;
+			if (selected >= loaded.length)
+				selected = loaded.length - 1;
+		});
 
 		return () => {
 			cancelled = true;
@@ -88,6 +105,17 @@
 		deleteGlyph(glyphs, selected);
 		if (selected >= glyphs.length) selected = glyphs.length - 1;
 	}
+
+	function handleExport() {
+		const text = $state.snapshot(glyphs).flat().join("");
+		const blob = new Blob([text], { type: "text/plain" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "glyphbitstring.txt";
+		a.click();
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <h1>PETSCII Park</h1>
@@ -131,6 +159,7 @@
 {/if}
 {#if outputurl}
 	<img src={outputurl} alt="output" />
+	<a href={outputurl} download="petscii.png">Download</a>
 {/if}
 <div>
 	<label>Saturation</label>
@@ -169,9 +198,17 @@
 		onchange={() => (contrast = Math.round(contrast * 100) / 100)}
 	/>
 </div>
+<label>Import Glyphs</label>
+<input
+	type="file"
+	accept=".txt"
+	aria-label="glyph import"
+	bind:files={glyphFiles}
+/>
+<button onclick={handleExport}>Export Glyphs</button>
 <GlyphGallery {glyphs} bind:selected />
 <button onclick={() => addGlyph(glyphs, selected)}>Add</button>
-<button onclick={() => deleteGlyph(glyphs, selected)}>Delete</button>
+<button onclick={handleDelete}>Delete</button>
 <GlyphEditor glyph={glyphs[selected]} />
 
 <style>
