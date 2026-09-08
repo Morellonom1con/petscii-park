@@ -19,6 +19,7 @@
 	let selected = $state(0);
 	let saturation = $state(1);
 	let contrast = $state(1);
+	let chunkiness = $state(40);
 
 	onMount(async () => (glyphs = await getGlyphs()));
 
@@ -81,6 +82,7 @@
 			currentGlyphs,
 			currentSaturation,
 			currentContrast,
+			chunkiness,
 			controller.signal,
 		)
 			.then((blob) => {
@@ -196,6 +198,25 @@
 		step="0.01"
 		bind:value={contrast}
 		onchange={() => (contrast = Math.round(contrast * 100) / 100)}
+	/>
+</div>
+<div>
+	<label>Chunkiness</label>
+	<input
+		type="range"
+		min="20"
+		max="100"
+		step="1"
+		bind:value={chunkiness}
+	/>
+	<input
+		type="number"
+		min="20"
+		max="100"
+		step="0.01"
+		bind:value={chunkiness}
+		onchange={() =>
+			(chunkiness = Math.round(chunkiness * 100) / 100)}
 	/>
 </div>
 <label>Import Glyphs</label>

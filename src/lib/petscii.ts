@@ -321,6 +321,7 @@ export async function petsciify(
 	glyphs: number[][],
 	saturation: number,
 	contrast: number,
+	chunkiness: number,
 	signal: AbortSignal
 ): Promise<Blob> {
 	const yieldToEventLoop = () => new Promise(r => setTimeout(r, 0))
@@ -338,7 +339,7 @@ export async function petsciify(
 	await yieldToEventLoop()
 	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
 
-	const cols = 40
+	const cols = chunkiness
 	const rows = Math.round(cols * sh / sw)
 	const gh = 8, gw = 8
 	let resizedDataArray = downsample(srcDataArray, rows * gh, cols * gw)
