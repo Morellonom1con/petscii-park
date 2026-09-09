@@ -158,7 +158,7 @@ export async function paletteFetch(
 	return await response.text();
 }
 
-function getPalette(
+export function getPalette(
 	paletteString: string
 ) {
 	const hexString = paletteString

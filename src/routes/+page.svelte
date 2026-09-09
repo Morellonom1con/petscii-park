@@ -1,22 +1,26 @@
 <script lang="ts">
-	import { petsciify, paletteFetch } from "$lib/petscii";
+	import { petsciify, paletteFetch, getPalette } from "$lib/petscii";
 	import { getGlyphs, addGlyph, deleteGlyph } from "$lib/glyphs";
 	import GlyphGallery from "$lib/GlyphGallery.svelte";
 	import GlyphEditor from "$lib/GlyphEditor.svelte";
 	import { onMount } from "svelte";
+	import PaletteGallery from "$lib/PaletteGallery.svelte";
 
 	let paletteFiles = $state<FileList | undefined>();
 	let glyphFiles = $state<FileList | undefined>();
 	let paletteString = $state<string | undefined>();
 	let paletteSource = $state<"lospec" | "file">("lospec");
 	let slug = $state("commodore64");
-
+	const palette = $derived(
+		paletteString ? getPalette(paletteString) : [],
+	);
 	let imgFiles = $state<FileList | undefined>();
 	let outputurl = $state<string | undefined>();
 	let inputurl = $state<string | undefined>();
 
 	let glyphs = $state<number[][]>([]);
-	let selected = $state(0);
+	let selectedGlyph = $state(0);
+	let selectedColor = $state(0);
 	let saturation = $state(1);
 	let contrast = $state(1);
 	let chunkiness = $state(40);
@@ -56,8 +60,8 @@
 		getGlyphs(file).then((loaded) => {
 			if (cancelled) return;
 			glyphs = loaded;
-			if (selected >= loaded.length)
-				selected = loaded.length - 1;
+			if (selectedGlyph >= loaded.length)
+				selectedGlyph = loaded.length - 1;
 		});
 
 		return () => {
@@ -104,8 +108,9 @@
 	});
 
 	function handleDelete() {
-		deleteGlyph(glyphs, selected);
-		if (selected >= glyphs.length) selected = glyphs.length - 1;
+		deleteGlyph(glyphs, selectedGlyph);
+		if (selectedGlyph >= glyphs.length)
+			selectedGlyph = glyphs.length - 1;
 	}
 
 	function handleExport() {
@@ -156,6 +161,7 @@
 		bind:files={paletteFiles}
 	/>
 {/if}
+<PaletteGallery {palette} bind:selectedColor />
 {#if inputurl}
 	<img src={inputurl} alt="input" />
 {/if}
@@ -213,7 +219,7 @@
 		type="number"
 		min="20"
 		max="100"
-		step="0.01"
+		step="1"
 		bind:value={chunkiness}
 		onchange={() =>
 			(chunkiness = Math.round(chunkiness * 100) / 100)}
@@ -227,10 +233,10 @@
 	bind:files={glyphFiles}
 />
 <button onclick={handleExport}>Export Glyphs</button>
-<GlyphGallery {glyphs} bind:selected />
-<button onclick={() => addGlyph(glyphs, selected)}>Add</button>
+<GlyphGallery {glyphs} bind:selectedGlyph />
+<button onclick={() => addGlyph(glyphs, selectedGlyph)}>Add</button>
 <button onclick={handleDelete}>Delete</button>
-<GlyphEditor glyph={glyphs[selected]} />
+<GlyphEditor glyph={glyphs[selectedGlyph]} />
 
 <style>
 	:global(body) {

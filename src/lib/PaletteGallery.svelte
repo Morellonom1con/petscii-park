@@ -1,24 +1,24 @@
 <script lang="ts">
-	let { glyphs, selectedGlyph = $bindable(0) } = $props();
-	import GlyphPreview from "./GlyphPreview.svelte";
+	let { palette, selectedColor = $bindable(0) } = $props();
+	import PalettePreview from "./PalettePreview.svelte";
 </script>
 
 <div class="gallery">
-	{#each glyphs as glyph, index}
+	{#each palette as color, index}
 		<div
 			role="button"
 			tabindex="0"
 			style="cursor:pointer"
-			onclick={() => (selectedGlyph = index)}
+			onclick={() => (selectedColor = index)}
 			onkeydown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
 					e.preventDefault();
-					selectedGlyph = index;
+					selectedColor = index;
 				}
 			}}
-			class:selected={index === selectedGlyph}
+			class:selected={index === selectedColor}
 		>
-			<GlyphPreview {glyph} />
+			<PalettePreview {color} />
 		</div>
 	{/each}
 </div>
@@ -31,6 +31,6 @@
 		padding: 2px;
 	}
 	.selected {
-		background-color: red;
+		outline: 2px solid red;
 	}
 </style>
