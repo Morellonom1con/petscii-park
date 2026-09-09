@@ -5,6 +5,7 @@
 	import GlyphEditor from "$lib/GlyphEditor.svelte";
 	import { onMount } from "svelte";
 	import PaletteGallery from "$lib/PaletteGallery.svelte";
+	import ZoomViewport from "$lib/ZoomViewport.svelte";
 
 	let paletteFiles = $state<FileList | undefined>();
 	let glyphFiles = $state<FileList | undefined>();
@@ -17,6 +18,8 @@
 	let imgFiles = $state<FileList | undefined>();
 	let outputurl = $state<string | undefined>();
 	let inputurl = $state<string | undefined>();
+	let inW = $state(0);
+	let inH = $state(0);
 
 	let glyphs = $state<number[][]>([]);
 	let selectedGlyph = $state(0);
@@ -24,6 +27,8 @@
 	let saturation = $state(1);
 	let contrast = $state(1);
 	let chunkiness = $state(40);
+	const outW = $derived(chunkiness * 8 * 2);
+	const outH = $derived(Math.round((chunkiness * inH) / inW) * 8 * 2);
 
 	onMount(async () => (glyphs = await getGlyphs()));
 
@@ -74,6 +79,7 @@
 		const currentPalette = paletteString;
 		const currentSaturation = saturation;
 		const currentContrast = contrast;
+		const currentChunkiness = chunkiness;
 		const imgFile = imgFiles?.[0];
 
 		if (!imgFile || !currentPalette) return;
@@ -86,7 +92,7 @@
 			currentGlyphs,
 			currentSaturation,
 			currentContrast,
-			chunkiness,
+			currentChunkiness,
 			controller.signal,
 		)
 			.then((blob) => {
@@ -104,9 +110,20 @@
 		if (!imgFile) return;
 		const url = URL.createObjectURL(imgFile);
 		inputurl = url;
-		return () => URL.revokeObjectURL(url);
-	});
+		let cancelled = false;
+		createImageBitmap(imgFile).then((bmp) => {
+			if (!cancelled) {
+				inW = bmp.width;
+				inH = bmp.height;
+			}
+			bmp.close();
+		});
 
+		return () => {
+			cancelled = true;
+			URL.revokeObjectURL(url);
+		};
+	});
 	function handleDelete() {
 		deleteGlyph(glyphs, selectedGlyph);
 		if (selectedGlyph >= glyphs.length)
@@ -162,12 +179,14 @@
 	/>
 {/if}
 <PaletteGallery {palette} bind:selectedColor />
+<ZoomViewport src={inputurl} width={inW} height={inH} alt="input" />
+
 {#if inputurl}
-	<img src={inputurl} alt="input" />
+	<a href={inputurl} download="input.png">Download</a>
 {/if}
+<ZoomViewport src={outputurl} width={outW} height={outH} alt="output" />
 {#if outputurl}
-	<img src={outputurl} alt="output" />
-	<a href={outputurl} download="petscii.png">Download</a>
+	<a href={outputurl} download="output.png">Download</a>
 {/if}
 <div>
 	<label>Saturation</label>
@@ -218,7 +237,7 @@
 	<input
 		type="number"
 		min="20"
-		max="100"
+		max={Math.floor(inW / 8)}
 		step="1"
 		bind:value={chunkiness}
 		onchange={() =>
