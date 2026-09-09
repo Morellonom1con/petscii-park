@@ -27,10 +27,11 @@
 	.gallery {
 		background-color: slategray;
 		display: grid;
-		grid-template-columns: repeat(15, 28px);
+		grid-template-columns: repeat(10, 24px);
 		padding: 2px;
 	}
 	.selected {
 		outline: 2px solid red;
+		outline-offset: -2px;
 	}
 </style>
