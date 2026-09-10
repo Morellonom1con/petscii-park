@@ -108,11 +108,11 @@
 	.viewport {
 		width: 100%;
 		height: 500px;
-		border: 2px solid #333;
 		overflow: hidden;
 		position: relative;
 		background-color: #1a1a1a;
 		touch-action: none;
+		border-radius: 15px;
 	}
 	.content {
 		position: absolute;

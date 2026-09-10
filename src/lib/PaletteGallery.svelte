@@ -25,10 +25,11 @@
 
 <style>
 	.gallery {
-		background-color: slategray;
 		display: grid;
+		overflow-y: auto;
 		grid-template-columns: repeat(10, 24px);
 		padding: 2px;
+		max-height: 200px;
 	}
 	.selected {
 		outline: 2px solid red;
