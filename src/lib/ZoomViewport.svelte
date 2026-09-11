@@ -20,11 +20,8 @@
 	export function fitToView() {
 		if (!width || !height || !viewport) return;
 		const rect = viewport.getBoundingClientRect();
-		const fit = Math.min(
-			rect.width / width,
-			rect.height / height,
-			1,
-		);
+		let fit = 0;
+		fit = Math.min(rect.width / width, rect.height / height);
 		zoom = fit;
 		panX = (rect.width - width * fit) / 2;
 		panY = (rect.height - height * fit) / 2;
