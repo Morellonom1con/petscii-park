@@ -4,11 +4,13 @@
 		width = 0,
 		height = 0,
 		alt = "",
+		action,
 	}: {
 		src: string | undefined;
 		width?: number;
 		height?: number;
 		alt?: string;
+		action?: import("svelte").Snippet;
 	} = $props();
 
 	let viewport: HTMLDivElement;
@@ -69,38 +71,61 @@
 	}
 </script>
 
-<div class="wrapper">
+<div style="display: block; width: 100% ;">
 	<div
-		class="viewport"
-		role="application"
-		aria-label={alt || "image viewport"}
-		bind:this={viewport}
-		onwheel={handleWheel}
-		onpointerdown={handlePointerDown}
-		onpointermove={handlePointerMove}
-		onpointerup={handlePointerUp}
-		onpointercancel={handlePointerUp}
-		onauxclick={(e) => e.preventDefault()}
+		style="background-color: #aaaaaa; border-top-left-radius: 10px; border-top-right-radius: 10px"
 	>
-		{#if src}
+		<div class="controls">
 			<div
-				class="content"
-				style="transform: translate({panX}px, {panY}px) scale({zoom})"
+				style="font-family: Pixelify Sans; height: fit-content; width: fit-content; margin-left: 10px;"
 			>
-				<img {src} {alt} />
+				{alt}
 			</div>
-		{/if}
+			<button class="fit" onclick={fitToView}>Fit</button>
+			<span
+				style="font-family:Pixelify Sans;align-content: end; width: fit-content;"
+				>{Math.round(zoom * 100)}%</span
+			>
+
+			{#if action}
+				<div
+					style="margin-left: auto; padding-inline: 10px;"
+				>
+					{@render action()}
+				</div>
+			{/if}
+		</div>
 	</div>
-	<div class="controls">
-		<button onclick={fitToView}>Fit</button>
-		<span>{Math.round(zoom * 100)}%</span>
+	<div>
+		<div class="wrapper">
+			<div
+				class="viewport"
+				role="application"
+				aria-label={alt || "image viewport"}
+				bind:this={viewport}
+				onwheel={handleWheel}
+				onpointerdown={handlePointerDown}
+				onpointermove={handlePointerMove}
+				onpointerup={handlePointerUp}
+				onpointercancel={handlePointerUp}
+				onauxclick={(e) => e.preventDefault()}
+			>
+				{#if src}
+					<div
+						class="content"
+						style="transform: translate({panX}px, {panY}px) scale({zoom})"
+					>
+						<img {src} {alt} />
+					</div>
+				{/if}
+			</div>
+		</div>
 	</div>
 </div>
 
 <style>
 	.wrapper {
 		width: 100%;
-		max-width: 800px;
 	}
 	.viewport {
 		width: 100%;
@@ -109,7 +134,8 @@
 		position: relative;
 		background-color: #1a1a1a;
 		touch-action: none;
-		border-radius: 15px;
+		border-bottom-left-radius: 10px;
+		border-bottom-right-radius: 10px;
 	}
 	.content {
 		position: absolute;
@@ -125,7 +151,17 @@
 	.controls {
 		display: flex;
 		align-items: center;
+		height: 32px;
 		gap: 8px;
 		padding: 4px 0;
+	}
+	.fit {
+		font-family: Pixelify Sans;
+		border-radius: 2px;
+		border: 2px solid #888888;
+	}
+	.fit:hover,
+	.fit:focus-visible {
+		background-color: #cccccc;
 	}
 </style>
